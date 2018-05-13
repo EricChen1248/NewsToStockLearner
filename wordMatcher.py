@@ -6,7 +6,7 @@ import re
 
 TRAINING_SET_SIZE = 3
 # Needs to be below 4
-DAYS_AGO = 1
+DAYS_AGO = 2
 regex = re.compile('[\u4e00-\u9fff]')
 
 with open("Data/chosen_stocks.txt", "r", encoding="utf8") as stocksFile:
@@ -20,7 +20,14 @@ for stock in stocks:
     
     dates = list(sorted(list(map(date, list(returns.keys())))))
     trainingOffset = random.randint(0, TRAINING_SET_SIZE)
+    if trainingOffset - 1 < 0:
+        lastD = trainingOffset - 1 + TRAINING_SET_SIZE
+    else:
+        lastD = trainingOffset - 1
+
+    lastDay = dates[lastD::TRAINING_SET_SIZE]
     dates = dates[trainingOffset::TRAINING_SET_SIZE]
+    lastReturns = {day: returns[day.toString()] for day in lastDay}
     returns = {day: returns[day.toString()] for day in dates}
 
     wordsPerDay = {}
@@ -62,8 +69,10 @@ for stock in stocks:
         wordsPerDay[day.toDirString()] = words
         newsPerDay[day.toDirString()] = (articleCount, returns[day][1])
 
-        newsPerDay["meta"] = { "Interval": TRAINING_SET_SIZE, "Offset": trainingOffset, "DaysAgo": DAYS_AGO}
-    
+    newsPerDay["meta"] = { "Interval": TRAINING_SET_SIZE, "Offset": trainingOffset, "DaysAgo": DAYS_AGO}
+    newsPerDay["previous"] = {}
+    for day, ret in lastReturns.items():
+        newsPerDay["previous"][day.toDirString()] = ret
     
     with open("MatchedWords/" + stock + ".json", mode = "w", encoding = "utf8") as wordsFile:
         wordsFile.write(json.dumps(wordsPerDay, ensure_ascii=False))

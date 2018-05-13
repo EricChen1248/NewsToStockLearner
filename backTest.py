@@ -6,13 +6,14 @@ from date import date
 from copy import deepcopy
 
 class myThread (threading.Thread):
-    def __init__(self, currentDay):
+    def __init__(self, currentDay, prev):
         threading.Thread.__init__(self)
         self.currentDay = currentDay
+        self.prev = prev
 
     def run(self):
         # print ("Testing: " + self.currentDay.toString())
-        TestDate(deepcopy(self.currentDay))
+        TestDate(deepcopy(self.currentDay), self.prev)
         # print ("Completed testing for: " + self.currentDay.toString())
 
 
@@ -24,7 +25,8 @@ with open("Data/chosen_stocks.txt", "r", encoding="utf8") as stocksFile:
         stocks[i] = stocks[i][:-1]
 
 
-def TestDate(currentDay):
+def TestDate(currentDay, prev):
+    oDay = deepcopy(currentDay)
     for i in range(daysAgo):
         currentDay.back()
 
@@ -56,9 +58,12 @@ def TestDate(currentDay):
 
     dayScore = 0
     for w, count in normWords:
-        dayScore += scores.get(w, 0) * count
+        score = scores.get(w, 0)
+        if score * prev > 0:
+            score *= 1.2
+        dayScore += score * count
 
-    if dayScore * returns[day][1] < 0:
+    if dayScore * returns[oDay.toString()][1] < 0:
         wrongCount[0] += 1
     else:
         correct[0] += 1
@@ -85,16 +90,15 @@ for stock in stocks:
         trainingOffset = random.randint(0, trainingSetSize)
 
     dates = dates[trainingOffset::trainingSetSize]
-    returns = {day: returns[day.toString()] for day in dates}
 
     wordsPerDay = {}
     newsPerDay = {}
     threads = []
     for day in dates:
-        if returns[day][1] == "" or returns[day][1] == 0.0:
+        if returns[day.toString()][1] == "" or returns[day.toString()][1] == 0.0:
             continue
         
-        t = myThread(deepcopy(day))
+        t = myThread(deepcopy(day), returns[day.toString()][1])
         t.start()
         threads.append(t)
         if len(threads) > 8:

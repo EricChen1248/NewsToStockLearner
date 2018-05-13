@@ -16,6 +16,7 @@ class date:
         if self.day <= 0:
             self.month -= 1
             self.day = daysPerMonth[self.month]
+        return self
 
     def toString(self) -> str:
         return self.toShortString() + "/2016"
