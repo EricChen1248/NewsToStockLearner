@@ -72,7 +72,7 @@ for stock in stocks:
 
     with open("MatchedWords/" + stock + "_meta.json", "r", encoding="utf8") as metaFile:
         meta = json.loads(metaFile.read())
-        trainingSetSize = random.randint(1, 6)
+        trainingSetSize = random.randint(2, 4)
         originalOffset = meta["meta"]["Offset"]
         daysAgo = meta["meta"]["DaysAgo"]
 
@@ -93,7 +93,6 @@ for stock in stocks:
     for day in dates:
         if returns[day][1] == "" or returns[day][1] == 0.0:
             continue
-        
         
         t = myThread(deepcopy(day))
         t.start()
