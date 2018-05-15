@@ -1,5 +1,6 @@
 from copy import deepcopy
 from date import date
+import KeywordFunction 
 import random
 import json
 import re
@@ -9,6 +10,12 @@ TRAINING_SET_SIZE = 3
 DAYS_AGO = 2
 regex = re.compile('[\u4e00-\u9fff]')
 
+with open("Data/stocknames.txt", "r", encoding="utf8") as stocksFile:
+    allStocks = stocksFile.readlines()
+    for i in range(len(allStocks)):
+        allStocks[i] = allStocks[i][:-1]
+    allStocks = set(allStocks)
+
 with open("Data/chosen_stocks.txt", "r", encoding="utf8") as stocksFile:
     stocks = stocksFile.readlines()
     for i in range(len(stocks)):
@@ -17,7 +24,10 @@ with open("Data/chosen_stocks.txt", "r", encoding="utf8") as stocksFile:
 for stock in stocks:
     with open("Returns/" + stock + ".json", mode = "r", encoding = "utf8") as returnsFile:
         returns = json.loads(returnsFile.read())
-    
+
+    similarWords = KeywordFunction.getWord(stock)
+    companies = set(map(lambda x : x[0], similarWords)) & allStocks
+
     dates = list(sorted(list(map(date, list(returns.keys())))))
     trainingOffset = random.randint(0, TRAINING_SET_SIZE)
     if trainingOffset - 1 < 0:
@@ -45,21 +55,29 @@ for stock in stocks:
 
         with open("Intersection/" + currentDay.toDirString() + ".json", "r", encoding = "utf8") as intersectfile:
             intersect = json.loads(intersectfile.read())
+            secondInt = deepcopy(intersect)
             for k, v in list(intersect.items()):
                 if stock not in v:
                     del intersect[k]
             intersect = set(intersect.keys())
+
+            for k, v in list(secondInt.items()):
+                if len(set(v) & companies) == 0:
+                    del secondInt[k]
+            secondInt = set(secondInt)
             
         articleCount = 0
         words = {}
         with open("DailyNews/" + currentDay.toDirString() + ".json","r", encoding = "utf-8-sig") as newsfile:
             newsSet = json.loads(newsfile.read())["News"]
             for news in newsSet:
-                if news["id"] not in intersect:
-                    continue
-                articleCount += 1
-                for word in news["content"]:
-                    words[word] = words.get(word, 0) + 1
+                if news["id"] in intersect:
+                    articleCount += 1
+                    for word in news["content"]:
+                        words[word] = words.get(word, 0) + 1
+                if news["id"] in secondInt:
+                    for word in news["content"]:
+                        words[word] = words.get(word, 0) + 0.1
 
         keptWords = set(filter(regex.match, words.keys()))
         for word in list(words.keys()):
